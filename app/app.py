@@ -4,200 +4,311 @@ import pickle
 import os
 import shap
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # =============================
-# Load Model
+# Page Config
 # =============================
-model_path = os.path.join("models", "xgb_fraud_model.pkl")
-
-with open(model_path, "rb") as f:
-    model = pickle.load(f)
-
-THRESHOLD = 0.3
-
 st.set_page_config(page_title="AI Fraud Detection Simulator", layout="centered")
 
-st.title("🏦 AI-Based Fraud Detection Simulator")
-st.markdown("Simulating Real-World Banking Fraud Analysis")
-
-st.divider()
-
-st.subheader("📝 Enter Transaction Details")
+# =============================
+# Navigation State
+# =============================
+if "page" not in st.session_state:
+    st.session_state.page = "main"
 
 # =============================
-# User-Friendly Inputs
+# Top Right Help Button
 # =============================
-
-amount = st.number_input("Transaction Amount ($)", min_value=0.0, value=100.0)
-
-time_of_day = st.selectbox(
-    "Transaction Time",
-    ["Morning", "Afternoon", "Evening", "Night"]
-)
-
-international = st.selectbox(
-    "Is this an International Transaction?",
-    ["No", "Yes"]
-)
-
-online = st.selectbox(
-    "Is this an Online Purchase?",
-    ["No", "Yes"]
-)
-
-multiple_txn = st.selectbox(
-    "Multiple Transactions in Last Hour?",
-    ["No", "Yes"]
-)
-
-high_risk_merchant = st.selectbox(
-    "High-Risk Merchant Category?",
-    ["No", "Yes"]
-)
+col1, col2 = st.columns([6, 1])
+with col2:
+    if st.button("❓ Help"):
+        st.session_state.page = "help"
 
 # =============================
-# Feature Mapping Logic
+# HELP PAGE
 # =============================
+if st.session_state.page == "help":
 
-def map_to_model_features():
-    # Base values
-    v17 = 0
-    v14 = 0
-    v12 = 0
-    time = 30000
+    st.title("🛡️ Fraud Awareness & Risk Education Center")
 
-    # Time mapping
-    if time_of_day == "Night":
-        time = 80000
-        v12 -= 1.5
-    elif time_of_day == "Evening":
-        time = 60000
-    elif time_of_day == "Morning":
-        time = 20000
+    st.markdown("""
+    # Understanding Financial Fraud and Its Consequences
 
-    # Risk factors
-    if international == "Yes":
-        v14 -= 2.5
-    if online == "Yes":
-        v17 -= 1.8
-    if multiple_txn == "Yes":
-        v12 -= 2.0
-    if high_risk_merchant == "Yes":
-        v17 -= 2.5
-        v14 -= 1.5
+    Financial fraud is a serious financial crime that impacts customers,
+    banks, and merchants worldwide.
 
-    return np.array([[v17, v14, v12, amount, time]])
+    ## 💳 What Happens When Fraud Occurs?
 
-# =============================
-# Prediction
-# =============================
+    ### Immediate Financial Loss
+    - Unauthorized money withdrawal
+    - Account freezing
+    - Emergency investigation
 
-if st.button("🔍 Analyze Transaction"):
+    ### Customer Impact
+    - Emotional stress
+    - Temporary financial instability
+    - Identity misuse risk
 
-    input_data = map_to_model_features()
+    ### Bank Impact
+    - Refund reimbursements
+    - Investigation costs
+    - Reputation damage
 
-    probability = model.predict_proba(input_data)[0][1]
+    ### Merchant Impact
+    - Chargebacks
+    - Revenue loss
+    - Fraud monitoring expenses
+    """)
 
-    probability = model.predict_proba(input_data)[0][1]
+    st.divider()
+
+    st.subheader("🚨 What To Do If You Suspect Fraud")
+
+    st.markdown("""
+    1. Block your card immediately  
+    2. Contact your bank  
+    3. Change passwords  
+    4. Enable two-factor authentication  
+    5. Monitor account activity  
+    """)
+
+    st.divider()
+
+    st.subheader("📞 Report Fraud – Contact Information")
+
+    st.markdown("""
+    **Simulated Fraud Support Center**
+
+    📞 +1-800-999-SECURE  
+    📧 fraudsupport@securebank.com  
+    🌐 www.securebank.com/report-fraud  
+    """)
+
+    st.warning("This contact section is for project demonstration only.")
+
+    st.divider()
 
     # =============================
-    # Animated Risk Gauge
+    # FAQ Section
     # =============================
+    st.subheader("❓ Frequently Asked Questions")
 
-    st.subheader("📊 Fraud Risk Meter")
+    with st.expander("What factors increase fraud risk the most?"):
+        st.write("Unusual hours, international payments, high-risk merchants, and rapid transactions increase fraud risk.")
 
-    risk_percent = int(probability * 100)
+    with st.expander("What is a false positive?"):
+        st.write("A legitimate transaction incorrectly flagged as fraud.")
 
-    if risk_percent < 20:
-        color = "green"
-        risk_label = "LOW RISK"
-    elif risk_percent < 60:
-        color = "orange"
-        risk_label = "MEDIUM RISK"
-    else:
-        color = "red"
-        risk_label = "HIGH RISK"
+    with st.expander("What is a false negative?"):
+        st.write("A fraudulent transaction incorrectly classified as safe.")
 
-    progress_bar = st.progress(0)
+    with st.expander("Why are small test transactions dangerous?"):
+        st.write("Fraudsters test stolen cards with small amounts before large fraud attempts.")
 
-    for i in range(risk_percent + 1):
-        progress_bar.progress(i)
+    with st.expander("How does AI improve fraud detection?"):
+        st.write("AI detects complex behavioral patterns beyond simple rule-based systems.")
 
-    st.markdown(
-        f"""
-        <h2 style='text-align: center; color:{color};'>
-        {risk_percent}% — {risk_label}
-        </h2>
-        """,
-        unsafe_allow_html=True
+    st.divider()
+
+    # =============================
+    # Fraud Awareness Quiz
+    # =============================
+    st.subheader("🧠 Test Your Fraud Awareness Knowledge")
+
+    score = 0
+
+    q1 = st.radio(
+        "1️⃣ Most suspicious scenario?",
+        [
+            "Regular grocery purchase",
+            "Multiple midnight international transactions",
+            "Monthly subscription",
+            "ATM withdrawal locally"
+        ],
+        key="q1"
+    )
+    if q1 == "Multiple midnight international transactions":
+        score += 1
+
+    q2 = st.radio(
+        "2️⃣ If you receive an OTP you didn’t request?",
+        [
+            "Ignore it",
+            "Share it",
+            "Report immediately",
+            "Use later"
+        ],
+        key="q2"
+    )
+    if q2 == "Report immediately":
+        score += 1
+
+    q3 = st.radio(
+        "3️⃣ Why are small test transactions risky?",
+        [
+            "Harmless",
+            "Test stolen cards",
+            "Reduce risk",
+            "Banks ignore them"
+        ],
+        key="q3"
+    )
+    if q3 == "Test stolen cards":
+        score += 1
+
+    q4 = st.radio(
+        "4️⃣ What is a false negative?",
+        [
+            "Blocking real transaction",
+            "Allowing fraud as safe",
+            "System error",
+            "Duplicate payment"
+        ],
+        key="q4"
+    )
+    if q4 == "Allowing fraud as safe":
+        score += 1
+
+    q5 = st.radio(
+        "5️⃣ Which system detects complex fraud patterns?",
+        [
+            "Manual review",
+            "Rule-only system",
+            "AI & ML models",
+            "Random check"
+        ],
+        key="q5"
+    )
+    if q5 == "AI & ML models":
+        score += 1
+
+    if st.button("📊 Submit Quiz"):
+        st.subheader("🎯 Your Score")
+        st.write(f"You scored **{score} out of 5**")
+
+        if score == 5:
+            st.success("Excellent fraud awareness!")
+        elif score >= 3:
+            st.info("Good understanding of fraud risks.")
+        else:
+            st.warning("Review the fraud awareness section again.")
+
+    if st.button("⬅ Back to Dashboard"):
+        st.session_state.page = "main"
+
+# =============================
+# MAIN DASHBOARD
+# =============================
+else:
+
+    # Load Model
+    model_path = os.path.join("models", "xgb_fraud_model.pkl")
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+
+    st.title("🏦 AI-Based Fraud Detection Simulator")
+    st.markdown("Simulating Real-World Banking Fraud Analysis")
+    st.divider()
+
+    st.subheader("📝 Enter Transaction Details")
+
+    amount = st.number_input("Transaction Amount ($)", min_value=0.0, value=100.0)
+
+    time_of_day = st.selectbox(
+        "Transaction Time",
+        ["Morning", "Afternoon", "Evening", "Night"]
     )
 
-    # Recommended Action
-    if risk_percent >= 60:
-        st.error("⚠️ Recommended Action: Block Transaction or Require OTP")
-    elif risk_percent >= 20:
-        st.warning("🔍 Recommended Action: Monitor Transaction")
-    else:
-        st.success("✅ Transaction Approved")
+    international = st.selectbox("International Transaction?", ["No", "Yes"])
+    online = st.selectbox("Online Purchase?", ["No", "Yes"])
+    multiple_txn = st.selectbox("Multiple Transactions in Last Hour?", ["No", "Yes"])
+    high_risk_merchant = st.selectbox("High-Risk Merchant Category?", ["No", "Yes"])
 
-   # =============================
-    # Simple Risk Contribution Chart
-    # =============================
+    def map_to_model_features():
+        v17 = 0
+        v14 = 0
+        v12 = 0
+        time = 30000
 
-    st.subheader("📊 Risk Contribution Breakdown")
+        if time_of_day == "Night":
+            time = 80000
+            v12 -= 1.5
+        elif time_of_day == "Evening":
+            time = 60000
+        elif time_of_day == "Morning":
+            time = 20000
 
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(input_data)[0]
+        if international == "Yes":
+            v14 -= 2.5
+        if online == "Yes":
+            v17 -= 1.8
+        if multiple_txn == "Yes":
+            v12 -= 2.0
+        if high_risk_merchant == "Yes":
+            v17 -= 2.5
+            v14 -= 1.5
 
-    feature_labels = [
-        "Behavior Risk",
-        "Pattern Risk",
-        "Activity Risk",
-        "Transaction Amount",
-        "Transaction Time"
-    ]
+        return np.array([[v17, v14, v12, amount, time]])
 
-    # Create dataframe
-    import pandas as pd
-    contrib_df = pd.DataFrame({
-        "Feature": feature_labels,
-        "Impact": shap_values
-    })
+    if st.button("🔍 Analyze Transaction"):
 
-    # Sort by impact magnitude
-    contrib_df = contrib_df.sort_values(by="Impact", key=abs, ascending=True)
+        input_data = map_to_model_features()
+        probability = model.predict_proba(input_data)[0][1]
+        risk_percent = int(probability * 100)
 
-    fig, ax = plt.subplots()
+        st.subheader("📊 Fraud Risk Meter")
 
-    colors = ["red" if x > 0 else "green" for x in contrib_df["Impact"]]
+        if risk_percent < 20:
+            color = "green"
+            label = "LOW RISK"
+        elif risk_percent < 60:
+            color = "orange"
+            label = "MEDIUM RISK"
+        else:
+            color = "red"
+            label = "HIGH RISK"
 
-    ax.barh(contrib_df["Feature"], contrib_df["Impact"], color=colors)
+        progress_bar = st.progress(0)
+        for i in range(risk_percent + 1):
+            progress_bar.progress(i)
 
-    ax.set_xlabel("Impact on Fraud Risk")
-    ax.set_title("Feature Contribution to Risk Score")
+        st.markdown(
+            f"<h2 style='text-align:center; color:{color};'>{risk_percent}% — {label}</h2>",
+            unsafe_allow_html=True
+        )
 
-    st.pyplot(fig)
+        if risk_percent >= 60:
+            st.error("⚠️ Block Transaction or Require OTP")
+        elif risk_percent >= 20:
+            st.warning("🔍 Monitor Transaction")
+        else:
+            st.success("✅ Transaction Approved")
 
-    st.subheader("🧠 Detailed Risk Explanation")
+        st.subheader("📊 Risk Contribution Breakdown")
 
-    # Identify strongest positive and negative contributors
-    top_positive = contrib_df[contrib_df["Impact"] > 0]
-    top_negative = contrib_df[contrib_df["Impact"] < 0]
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(input_data)[0]
 
-    st.markdown("### 📌 Why This Risk Score Was Assigned")
+        feature_labels = [
+            "Behavior Risk",
+            "Pattern Risk",
+            "Activity Risk",
+            "Transaction Amount",
+            "Transaction Time"
+        ]
 
-    if not top_positive.empty:
-        st.markdown("**🔺 Factors Increasing Risk:**")
-        for _, row in top_positive.iterrows():
-            st.write(
-                f"- {row['Feature']} showed unusual activity, increasing fraud probability."
-            )
+        contrib_df = pd.DataFrame({
+            "Feature": feature_labels,
+            "Impact": shap_values
+        }).sort_values(by="Impact", key=abs)
 
-    if not top_negative.empty:
-        st.markdown("**🔻 Factors Reducing Risk:**")
-        for _, row in top_negative.iterrows():
-            st.write(
-                f"- {row['Feature']} appeared normal and reduced overall fraud risk."
-            )
+        fig, ax = plt.subplots()
+        colors = ["red" if x > 0 else "green" for x in contrib_df["Impact"]]
+        ax.barh(contrib_df["Feature"], contrib_df["Impact"], color=colors)
+        ax.set_xlabel("Impact on Fraud Risk")
+        ax.set_title("Feature Contribution to Risk Score")
 
-    st.markdown("---")
+        st.pyplot(fig)
+
+        st.markdown("---")
