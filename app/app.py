@@ -1,14 +1,17 @@
 import streamlit as st
 import numpy as np
-import pickle
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
+from xgboost import XGBClassifier
 
 # =============================
 # Page Config
 # =============================
-st.set_page_config(page_title="AI Fraud Detection Simulator", layout="centered")
+st.set_page_config(
+    page_title="AI Fraud Detection Simulator",
+    layout="centered"
+)
 
 # =============================
 # Navigation State
@@ -34,32 +37,32 @@ if st.session_state.page == "help":
     st.markdown("## 🛡️ Fraud Awareness Center")
 
     st.markdown("""
-    Financial fraud can cause:
-    - Unauthorized withdrawals  
-    - Account freezing  
-    - Identity theft  
-    - Emotional and financial stress  
+Financial fraud can cause:
+- Unauthorized withdrawals  
+- Account freezing  
+- Identity theft  
+- Emotional stress  
 
-    ### 🚨 What To Do If You Suspect Fraud
-    1. Immediately block your card  
-    2. Contact your bank  
-    3. Change passwords  
-    4. Enable 2FA  
-    5. Monitor statements  
-    """)
+### 🚨 What To Do If You Suspect Fraud
+1. Block your card immediately  
+2. Contact your bank  
+3. Change passwords  
+4. Enable 2FA  
+5. Monitor bank statements  
+""")
 
     st.divider()
 
     st.subheader("❓ Frequently Asked Questions")
 
     with st.expander("What increases fraud risk?"):
-        st.write("Night transactions, international activity, rapid transactions, high-risk merchants.")
+        st.write("Night transactions, international activity, rapid multiple transactions, high-risk merchants.")
 
     with st.expander("What is a false positive?"):
-        st.write("A genuine transaction incorrectly flagged as fraud.")
+        st.write("A normal transaction wrongly flagged as fraud.")
 
     with st.expander("What is a false negative?"):
-        st.write("A fraud transaction incorrectly marked as safe.")
+        st.write("A fraud transaction wrongly marked as safe.")
 
     st.divider()
 
@@ -67,6 +70,7 @@ if st.session_state.page == "help":
     st.subheader("🧠 Quick Fraud Quiz")
 
     score = 0
+
     q1 = st.radio(
         "Which scenario is most suspicious?",
         [
@@ -94,13 +98,14 @@ else:
     st.divider()
 
     # =============================
-    # Load Model (Cached)
+    # Load Model (JSON Safe)
     # =============================
     @st.cache_resource
     def load_model():
-        model_path = os.path.join("models", "xgb_fraud_model.pkl")
-        with open(model_path, "rb") as f:
-            return pickle.load(f)
+        model_path = os.path.join("models", "xgb_fraud_model.json")
+        model = XGBClassifier()
+        model.load_model(model_path)
+        return model
 
     model = load_model()
 
@@ -189,7 +194,7 @@ else:
             st.success("✅ Transaction Approved")
 
         # =============================
-        # Feature Importance Section
+        # Feature Importance
         # =============================
         st.divider()
         st.subheader("📊 Model Feature Importance")
@@ -219,21 +224,10 @@ else:
         st.markdown("### 📘 How to Read This Chart")
 
         st.markdown("""
-        📊 Bigger bar = More important feature
-The longer the bar, the more that factor affects fraud detection.
-
-🧠 Model learned this from past data
-These results come from patterns found in previous transactions.
-
-⚖️ All features are compared to each other
-Importance shows which factor matters more than others.
-
-🔍 This is overall importance
-It shows general model behavior, not just this one transaction.
-
-🚨 High importance does not always mean fraud
-It just means the model pays more attention to that feature.
-
-📈 Helps improve the system
-Banks can use this to understand what signals are most useful
-        """)
+• Bigger bar = More important feature  
+• Model learned this from past transaction data  
+• All features are compared to each other  
+• This shows overall importance (not just this transaction)  
+• High importance does NOT automatically mean fraud  
+• Helps banks understand key fraud signals  
+""")

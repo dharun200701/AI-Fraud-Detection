@@ -1,14 +1,13 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
-import pickle
 import os
 
 # Load dataset
 df = pd.read_csv("creditcard.csv.zip")
 
 # Select important features
-selected_features =  ['V17', 'V14', 'V12', 'Amount', 'Time']
+selected_features = ['V17', 'V14', 'V12', 'Amount', 'Time']
 
 X = df[selected_features]
 y = df['Class']
@@ -29,10 +28,8 @@ model = XGBClassifier(
 
 model.fit(X_train, y_train)
 
-# Save model
+# Save model (PRODUCTION SAFE)
 os.makedirs("models", exist_ok=True)
+model.save_model("models/xgb_fraud_model.json")
 
-with open("models/xgb_fraud_model.pkl", "wb") as f:
-    pickle.dump(model, f)
-
-print("✅ Model retrained using important features only.")
+print("✅ Model retrained and saved as JSON format.")
