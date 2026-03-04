@@ -1,7 +1,6 @@
 streamlit
-numpy
-pandas
+xgboost==1.7.6
+shap==0.44.1
 matplotlib
-xgboost
-scikit-learn
-shap
+pandas
+numpy
