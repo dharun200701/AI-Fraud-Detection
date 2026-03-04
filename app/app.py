@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import pickle
 import os
-import shap
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -18,7 +17,7 @@ if "page" not in st.session_state:
     st.session_state.page = "main"
 
 # =============================
-# Header with Help Button
+# Header
 # =============================
 col1, col2 = st.columns([6, 1])
 with col1:
@@ -60,7 +59,7 @@ if st.session_state.page == "help":
         st.write("A genuine transaction incorrectly flagged as fraud.")
 
     with st.expander("What is a false negative?"):
-        st.write("Fraud transaction incorrectly marked as safe.")
+        st.write("A fraud transaction incorrectly marked as safe.")
 
     st.divider()
 
@@ -95,7 +94,7 @@ else:
     st.divider()
 
     # =============================
-    # Load Model (Cached Properly)
+    # Load Model (Cached)
     # =============================
     @st.cache_resource
     def load_model():
@@ -104,15 +103,6 @@ else:
             return pickle.load(f)
 
     model = load_model()
-
-    # =============================
-    # Load SHAP Explainer (NO ARGUMENTS)
-    # =============================
-    @st.cache_resource
-    def load_explainer():
-        return shap.TreeExplainer(model)
-
-    explainer = load_explainer()
 
     # =============================
     # User Inputs
@@ -199,55 +189,51 @@ else:
             st.success("✅ Transaction Approved")
 
         # =============================
-        # SHAP Explanation
+        # Feature Importance Section
         # =============================
-        st.subheader("📊 Risk Contribution Breakdown")
+        st.divider()
+        st.subheader("📊 Model Feature Importance")
 
-        try:
-            shap_values = explainer.shap_values(input_data)
+        importances = model.feature_importances_
 
-            if isinstance(shap_values, list):
-                shap_values = shap_values[1]
+        feature_labels = [
+            "Behavior Risk",
+            "Pattern Risk",
+            "Activity Risk",
+            "Transaction Amount",
+            "Transaction Time"
+        ]
 
-            shap_values = shap_values[0]
+        importance_df = pd.DataFrame({
+            "Feature": feature_labels,
+            "Importance": importances
+        }).sort_values(by="Importance")
 
-            feature_labels = [
-                "Behavior Risk",
-                "Pattern Risk",
-                "Activity Risk",
-                "Transaction Amount",
-                "Transaction Time"
-            ]
+        fig, ax = plt.subplots()
+        ax.barh(importance_df["Feature"], importance_df["Importance"])
+        ax.set_xlabel("Relative Importance")
+        ax.set_title("Which Features Influence Fraud Detection")
 
-            contrib_df = pd.DataFrame({
-                "Feature": feature_labels,
-                "Impact": shap_values
-            }).sort_values(by="Impact", key=abs)
+        st.pyplot(fig)
 
-            fig, ax = plt.subplots()
-            colors = ["red" if x > 0 else "green" for x in contrib_df["Impact"]]
-            ax.barh(contrib_df["Feature"], contrib_df["Impact"], color=colors)
-            ax.set_xlabel("Impact on Fraud Risk")
-            ax.set_title("Feature Contribution")
+        st.markdown("### 📘 How to Read This Chart")
 
-            st.pyplot(fig)
-            st.markdown("### 📘 How to Read This Chart")
+        st.markdown("""
+        📊 Bigger bar = More important feature
+The longer the bar, the more that factor affects fraud detection.
 
-            st.markdown("""
-            - 🔴 **Red bars** → Increase fraud risk  
-            - 🟢 **Green bars** → Decrease fraud risk  
+🧠 Model learned this from past data
+These results come from patterns found in previous transactions.
 
-            - The **longer the bar**, the stronger the impact on the prediction.  
-            - Features at the top have the **highest influence** on the model decision.  
-            - Positive values push the transaction toward **Fraud**.  
-            - Negative values push the transaction toward **Safe**.  
+⚖️ All features are compared to each other
+Importance shows which factor matters more than others.
 
-            💡 Example:
-            If *International Transaction* shows a large red bar,  
-            it means that factor strongly increased fraud probability.
-            """)
+🔍 This is overall importance
+It shows general model behavior, not just this one transaction.
 
-            st.info("This explanation uses SHAP (SHapley Additive exPlanations) to improve transparency in AI decisions.")
+🚨 High importance does not always mean fraud
+It just means the model pays more attention to that feature.
 
-        except Exception as e:
-            st.warning(f"SHAP explanation unavailable: {e}")
+📈 Helps improve the system
+Banks can use this to understand what signals are most useful
+        """)
